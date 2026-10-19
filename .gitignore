@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+# Never commit these: they hold credentials
+session.json
+client_secret.json
+.env
