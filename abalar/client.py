@@ -164,7 +164,7 @@ class AbalarClient:
         return self._list("list-children", {}, key_name="children")
 
     def school(self, cod_centro: int) -> dict:
-        return self._list("get-school", {"codCentro": cod_centro})
+        return self._plain("get-school", {"codCentro": cod_centro}).get("records", {})
 
     def alerts(
         self,
@@ -203,15 +203,18 @@ class AbalarClient:
         end: str,
         page_size: int = 90,
     ) -> dict:
-        """Faltas de asistencia. start/end como 'dd/MM/yyyy'."""
+        """Faltas de asistencia. start/end como 'dd/MM/yyyy' (o con 'HH:mm')."""
+        def _ts(d: str, default: str) -> str:
+            return d if " " in d else f"{d} {default}"
+
         return self._plain(
             "list-absences",
             {
                 "codAlumno": cod_alumno,
                 "codGrupo": cod_grupo,
                 "codMatricula": cod_matricula,
-                "fechaInicio": start,
-                "fechaFin": end,
+                "fechaInicio": _ts(start, "00:00"),
+                "fechaFin": _ts(end, "23:59"),
                 "dt_indice_primeiro": 0,
                 "dt_tamano_paxina": page_size,
                 "dtOrde": 1,
