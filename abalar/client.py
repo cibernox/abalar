@@ -174,10 +174,16 @@ class AbalarClient:
         cod_matricula: int,
         page_size: int = 90,
     ) -> dict:
-        """Avisos do colexio (notices): title, coment, author, dates."""
-        return self._list(
+        """Avisos do cole (notices): title, coment, author, dates.
+
+        2026-10: o servidor abandonou o body cifrado (JSON-AES → 415) para este
+        servizo; agora é plain JSON igual ca get-school/list-absences.
+        """
+        return self._plain(
             "list-alerts",
             {
+                "codUsuario": self.user_id,
+                "persoa-id": self.persoa_id,
                 "codAlumno": cod_alumno,
                 "codCentro": cod_centro,
                 "codGrupo": cod_grupo,

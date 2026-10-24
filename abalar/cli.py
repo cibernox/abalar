@@ -214,15 +214,45 @@ def _pick_child(client: AbalarClient, index: int | None) -> dict:
 
 def _latest_messages(client: AbalarClient, child: dict, limit: int | None = None,
                      unread_only: bool = False) -> list[dict]:
-    """Últimos avisos do cole, do máis recente ao máis vello."""
+    """Últimos avisos do cole, do máis recente ao máis vello.
+
+    2026-10: o endpoint devolve un formato novo (titularAviso/descricionAviso,
+    datas 'dd/MM/yyyy', leido, codAvisoLectura); normalízao ao formato antigo
+    (title/coment/author/beginDate/read/codMarkRead) para non romper consumidores.
+    """
     alerts = client.alerts(
         child["codAlumno"],
         child["codCentro"],
         child["codGrupo"],
         child["codMatricula"],
     )
+    records = alerts.get("records", [])
+
+    def _norm(a: dict) -> dict:
+        if "titularAviso" in a:
+            def _ts(s: str) -> int:
+                try:
+                    d, mth, y = s.split("/")
+                    return int(dt.datetime(int(y), int(mth), int(d), tzinfo=dt.timezone.utc).timestamp())
+                except (ValueError, AttributeError, TypeError):
+                    return 0
+            pub = a.get("dataPublicacion") or a.get("dataInicioValidez") or ""
+            return {
+                "codigo": a.get("codigo"),
+                "title": a.get("titularAviso"),
+                "coment": a.get("descricionAviso"),
+                "author": a.get("autor"),
+                "type": (a.get("tipoAviso") or {}).get("descricion"),
+                "beginDate": _ts(pub),
+                "endDate": _ts(a.get("dataFinValidez") or ""),
+                "read": bool(a.get("leido")),
+                "codMarkRead": a.get("codAvisoLectura"),
+            }
+        return a
+
+    records = [_norm(a) for a in records]
     records = sorted(
-        alerts.get("records", []),
+        records,
         key=lambda e: int(e.get("beginDate") or 0),
         reverse=True,
     )
