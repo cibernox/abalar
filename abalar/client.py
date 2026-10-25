@@ -377,8 +377,20 @@ class AbalarClient:
             return _call()
         except AbalarError as e:
             if e.code in ("crypto", 401, 10005) and self.user_id and self.password:
-                self.login(self.user_id, self.password)
-                return _call()
+                # 2026-10-25: a rotación nocturna de sesión provocou fallos puntuais
+                # nunha única execución; reintenta o re-login con backoff.
+                import time
+
+                last: Exception = e
+                for i in range(3):
+                    if i:
+                        time.sleep(2 * i)
+                    try:
+                        self.login(self.user_id, self.password)
+                        return _call()
+                    except AbalarError as retry_err:
+                        last = retry_err
+                raise last
             raise
 
     def _list(self, service: str, content: dict, key_name: str | None = None) -> dict:
@@ -390,12 +402,28 @@ class AbalarClient:
         except AbalarError as e:
             # El challenge/session rotan; si guardamos credenciales, re-login y reintento.
             if e.code in ("crypto", 401) and self.user_id and self.password:
-                self.login(self.user_id, self.password)
+                import time
+
+                last: Exception = e
                 headers = {
                     "session-id": self.session_id or "",
                     "Authorization": self.session_id or "",
                 }
-                result = self._encrypted_request(service, content, headers=headers)
+                for i in range(3):
+                    if i:
+                        time.sleep(2 * i)
+                    try:
+                        self.login(self.user_id, self.password)
+                        headers = {
+                            "session-id": self.session_id or "",
+                            "Authorization": self.session_id or "",
+                        }
+                        result = self._encrypted_request(service, content, headers=headers)
+                        break
+                    except AbalarError as retry_err:
+                        last = retry_err
+                else:
+                    raise last
             else:
                 raise
         return result.get("result", result)
