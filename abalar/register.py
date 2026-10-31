@@ -19,7 +19,7 @@ import requests
 from .client import API_SERVER, BASE_ROUTE, CANAL, TIMEOUT, AbalarClient, AbalarError
 from .crypto import register_token, xor_sha1_key
 
-APP_VERSION = "1.36.1"
+APP_VERSION = "1.37.0"
 
 
 def request_code(phone: str, language: str = "gl") -> None:

@@ -27,7 +27,7 @@ from .crypto import decrypt, encrypt, sha1_key
 API_SERVER = "https://xadews.edu.xunta.gal"
 BASE_ROUTE = "/xadews/AbalarMobil/"
 CANAL = "Android"
-APP_VERSION = "1.36.1"
+APP_VERSION = "1.37.0"
 DEFAULT_LANGUAGE = "gl"
 TIMEOUT = 45
 
